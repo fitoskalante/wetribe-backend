@@ -14,7 +14,6 @@ app.register_blueprint(blueprint, url_prefix="/login")
 app.cli.add_command(create_db)
 db.init_app(app)
 login_manager.init_app(app)
-
 migrate = Migrate(app, db)
 CORS(app)
 
