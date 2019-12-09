@@ -2,12 +2,14 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin
 from flask_dance.consumer.storage.sqla import OAuthConsumerMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 import uuid
 
 db = SQLAlchemy()
 
 
 class User(UserMixin, db.Model):
+    __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
     email = db.Column(db.String)
@@ -25,6 +27,44 @@ class User(UserMixin, db.Model):
     def add(self):
         db.session.add(self)
         db.session.commit()
+
+
+class Event(db.Model):
+    __tablename__ = 'events'
+    id = db.Column(db.Integer, primary_key=True)
+    creator = db.Column(db.Integer, db.ForeignKey('users.id'))
+    title = db.Column(db.String, nullable=False)
+    description = db.Column(db.Text)
+    image_url = db.Column(db.String)
+    address = db.Column(db.String)
+    city = db.Column(db.String)
+    country = db.Column(db.String)
+    time = db.Column(db.DateTime)
+    date = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    lat = db.Column(db.Float)
+    lng = db.Column(db.Float)
+    categs = db.relationship('Category',
+                             backref='event',
+                             lazy=True,
+                             secondary='eventcategories')
+
+    def add(self):
+        db.session.add(self)
+        db.session.commit()
+
+
+class Category(db.Model):
+    __tablename__ = 'categories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+
+
+class EventCategory(db.Model):
+    __tablename__ = 'eventcategories'
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('events.id'))
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
 
 
 class OAuth(OAuthConsumerMixin, db.Model):
