@@ -4,6 +4,7 @@ certifi==2019.11.28
 cffi==1.13.2
 chardet==3.0.4
 Click==7.0
+colorful==0.5.4
 cryptography==2.8
 Flask==1.1.1
 Flask-Cors==3.0.8
@@ -11,6 +12,7 @@ Flask-Dance==3.0.0
 Flask-Login==0.4.1
 Flask-Migrate==2.5.2
 Flask-SQLAlchemy==2.4.1
+googlemaps==3.1.4
 gunicorn==20.0.4
 idna==2.8
 itsdangerous==1.1.0
@@ -18,8 +20,10 @@ Jinja2==2.10.3
 Mako==1.1.0
 MarkupSafe==1.1.1
 oauthlib==3.1.0
+prettyprinter==0.18.0
 psycopg2-binary==2.8.4
 pycparser==2.19
+Pygments==2.5.2
 pyOpenSSL==19.1.0
 python-dateutil==2.8.1
 python-dotenv==0.10.3

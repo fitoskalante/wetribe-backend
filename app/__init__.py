@@ -8,7 +8,6 @@ from .cli import create_db
 from flask_migrate import Migrate
 from flask_cors import CORS
 import googlemaps
-from googlemaps import convert
 import uuid, os
 from dotenv import load_dotenv
 from prettyprinter import pprint
