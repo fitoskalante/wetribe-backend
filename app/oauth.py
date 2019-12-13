@@ -40,6 +40,7 @@ def facebook_logged_in(blueprint, token):
 
     if oauth.user:
         login_user(oauth.user)
+        print(oauth.user)
         flash("Successfully signed in.")
 
     else:

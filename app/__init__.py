@@ -2,7 +2,7 @@ from flask import Flask, redirect, url_for, flash, render_template, jsonify, req
 from flask_login import login_required, logout_user, current_user
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 from .config import Config
-from .models import db, login_manager, User, Token
+from .models import db, login_manager, User, Token, Event, EventCategory, Category, Attendance, Comment
 from .oauth import blueprint
 from .cli import create_db
 from flask_migrate import Migrate
@@ -165,13 +165,136 @@ def login():
         return jsonify(res)
 
 
+@app.route('/getpos', methods=['POST'])
+def geocode():
+    if request.method == 'POST':
+        address = request.get_json()
+        geocode_result = gmaps.geocode(address)
+        lat = geocode_result[0]['geometry']['location']['lat']
+        lng = geocode_result[0]['geometry']['location']['lng']
+        addres_geocode = geocode_result[0]["address_components"]
+        lng = geocode_result[0]['geometry']['location']['lng']
+        res = {
+            "success": True,
+            "position": {
+                "lat": lat,
+                "lng": lng
+            },
+            'addres': addres_geocode
+        }
+        return jsonify(res)
+
+
 @app.route('/getaddress', methods=['POST'])
 def reverse_geocode():
     if request.method == 'POST':
         latlng = request.get_json()
-        reverse_geocode_result = gmaps.reverse_geocode(
-            (latlng['lat'], latlng['lng']))
-        return jsonify(reverse_geocode_result[0])
+        if latlng:
+            reverse_geocode_result = gmaps.reverse_geocode(
+                (latlng['lat'], latlng['lng']))
+            return jsonify(reverse_geocode_result[0])
+        else:
+            res = {'message': 'No position finded'}
+            return jsonify(res)
+
+
+@app.route('/joinevent', methods=['POST'])
+def join_event():
+    if request.method == 'POST':
+        api_key = request.headers.get('Authorization')
+        if api_key:
+            api_key = api_key.replace('Token ', '', 1)
+            token = Token.query.filter_by(uuid=api_key).first()
+            print(token)
+            if token:
+                currentuser = token.user
+                if currentuser:
+                    ev_id = request.get_json()
+                    print('osdnfvaidjnvoaisdbvcpasidbvcoasidbv', ev_id)
+                    a = Attendance(event_id=ev_id, user_id=currentuser.id)
+                    db.session.add(a)
+                    db.session.commit()
+                    get_all_a = len(
+                        Attendance.query.filter_by(event_id=ev_id).all())
+                    res = {'joined': True, 'attendance': get_all_a}
+                    return jsonify(res)
+        res = {'notloged': True}
+        return jsonify(res)
+
+
+@app.route('/leaveevent', methods=['POST'])
+@login_required
+def leave_event():
+    if request.method == 'POST':
+        ev_id = request.get_json()
+        a = Attendance.query.filter_by(event_id=ev_id,
+                                       user_id=current_user.id).first()
+        db.session.delete(a)
+        db.session.commit()
+        res = {'joined': False}
+        return jsonify(res)
+
+
+@app.route('/comment', methods=['POST'])
+@login_required
+def comment():
+    if request.method == 'POST':
+        response = request.get_json()
+        c = Comment(bode=response.comment,
+                    user_id=current_user.id,
+                    event_id=response.id)
+        print(response)
+        res = {'joined': False}
+        return jsonify(res)
+
+
+@app.route('/geteventlist')
+def get_event_list():
+    event_list = Event.query.all()
+    res = [i.convert_to_obj() for i in event_list]
+
+    return jsonify(res)
+
+
+@app.route('/geteventinfo/<id>')
+def get_event_info(id):
+    e = Event.query.filter_by(id=id).first()
+    user = User.query.filter_by(id=e.creator_id).first()
+    a = len(Attendance.query.filter_by(event_id=id).all())
+    api_key = request.headers.get('Authorization')
+    if api_key:
+        api_key = api_key.replace('Token ', '', 1)
+        token = Token.query.filter_by(uuid=api_key).first()
+        if token:
+            currentuser = token.user
+            if currentuser:
+                check_attending = Attendance.query.filter_by(
+                    event_id=id, user_id=currentuser.id).first()
+                if check_attending:
+                    res = {
+                        'event': e.convert_to_obj(),
+                        'user': user.convert_to_obj(),
+                        'attendance': a,
+                        'attending': True,
+                        'user_loged': True
+                    }
+                    return jsonify(res)
+                res = {
+                    'event': e.convert_to_obj(),
+                    'user': user.convert_to_obj(),
+                    'attendance': a,
+                    'attending': False,
+                    'user_loged': True
+                }
+                return jsonify(res)
+    res = {
+        'event': e.convert_to_obj(),
+        'user': user.convert_to_obj(),
+        'attendance': a,
+        'attending': False,
+        'user_loged': False
+    }
+    return jsonify(res)
 
 
 @app.route('/create-event', methods=['POST'])
@@ -179,11 +302,12 @@ def reverse_geocode():
 def create_event():
     if request.method == 'POST':
         ev_info = request.get_json()
+        print(ev_info)
         e = Event(
             title=ev_info['title'],
-            creator=current_user.id,
+            creator_id=current_user.id,
             description=ev_info['description'],
-            image_url=ev_info['image_url'],
+            image_url=ev_info['image'],
             address=ev_info['address'],
             city=ev_info['city'],
             country=ev_info['country'],
@@ -193,22 +317,13 @@ def create_event():
             lng=ev_info['pos']['lng'],
         )
         e.add()
-        pprint(e)
-        res = {
-            "success": True,
-            "event": {
-                "creator": e.creator,
-                "title": e.title,
-                "description": e.description,
-                "image_url": e.image_url,
-                "address": e.address,
-                "city": e.city,
-                "country": e.country,
-                "time": e.time,
-                "date": e.date,
-                "created_at": e.created_at,
-                "lat": e.lat,
-                "lng": e.lng
-            }
-        }
+        a = Attendance(event_id=e.id, user_id=current_user.id)
+        a.add()
+        categories = ev_info['categories']
+        if len(categories) > 0:
+            for category in categories:
+                evcat = EventCategory(event_id=e.id, category_id=category)
+                db.session.add(evcat)
+                db.session.commit()
+        res = {"success": True, "event_id": e.id}
         return jsonify(res)
