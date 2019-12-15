@@ -12,10 +12,21 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
+    last_name = db.Column(db.String)
     email = db.Column(db.String)
+    city = db.Column(db.String)
+    country = db.Column(db.String)
     password = db.Column(db.String)
     events = db.relationship('Event', backref='user', lazy=True)
     comments = db.relationship('Comment', backref='user', lazy=True)
+    interests = db.relationship('Interest',
+                                backref='user',
+                                lazy=True,
+                                secondary='userinterests')
+    attendances = db.relationship('Event',
+                                  backref='user',
+                                  lazy=True,
+                                  secondary='attendances')
 
     def set_password(self, password):
         self.password = generate_password_hash(password)
@@ -35,6 +46,11 @@ class User(UserMixin, db.Model):
             "id": self.id,
             "name": self.name,
             "email": self.email,
+            "interests": [i.convert_to_obj() for i in self.interests],
+            "country": self.country,
+            "city": self.city,
+            "events_created": [i.convert_to_obj() for i in self.events],
+            "events_attending": [i.convert_to_obj() for i in self.attendances],
         }
 
 
@@ -58,7 +74,10 @@ class Event(db.Model):
                              backref='event',
                              lazy=True,
                              secondary='eventcategories')
-    attendants = db.relationship('Attendance', backref='event', lazy=True)
+    attendants = db.relationship('User',
+                                 backref='event',
+                                 lazy=True,
+                                 secondary="attendances")
     comments = db.relationship('Comment', backref='event', lazy=True)
 
     def add(self):
@@ -66,26 +85,44 @@ class Event(db.Model):
         db.session.commit()
 
     def convert_to_obj(self):
+        c = Comment.query.filter_by(event_id=self.id).all()
         return {
-            "id": self.id,
-            "title": self.title,
-            'description': self.description,
-            'image_url': self.image_url,
-            'address': self.address,
-            'city': self.city,
-            'country': self.country,
-            'time': self.time,
-            'date': self.date,
-            'created_at': self.created_at,
+            "id":
+            self.id,
+            "title":
+            self.title,
+            'description':
+            self.description,
+            'image_url':
+            self.image_url,
+            'address':
+            self.address,
+            'city':
+            self.city,
+            'country':
+            self.country,
+            'time':
+            self.time,
+            'date':
+            self.date,
+            'created_at':
+            self.created_at,
             'position': {
                 'lat': self.lat,
                 'lng': self.lng
             },
-            'lat': self.lat,
-            'lng': self.lng,
+            'lat':
+            self.lat,
+            'lng':
+            self.lng,
             "categories": [i.convert_to_obj() for i in self.categs],
-            "creator_id": self.creator_id,
-            "attendants": len(self.attendants)
+            "creator":
+            User.query.filter_by(id=self.creator_id).first().convert_to_obj(),
+            "attendants":
+            len(self.attendants),
+            "attendants_details":
+            [i.convert_to_obj() for i in self.attendants],
+            "comments": [i.convert_to_obj() for i in c],
         }
 
 
@@ -96,6 +133,22 @@ class Category(db.Model):
 
     def convert_to_obj(self):
         return {"id": self.id, "name": self.name}
+
+
+class Interest(db.Model):
+    __tablename__ = 'interests'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+
+    def convert_to_obj(self):
+        return {"id": self.id, "name": self.name}
+
+
+class UserInterest(db.Model):
+    __tablename__ = 'userinterests'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    interest_id = db.Column(db.Integer, db.ForeignKey('interests.id'))
 
 
 class Attendance(db.Model):
@@ -134,9 +187,10 @@ class Comment(db.Model):
     def convert_to_obj(self):
         return {
             "id": self.id,
-            "body": self.title,
-            'time': self.time,
-            'date': self.date,
+            "body": self.body,
+            'event_id': self.event_id,
+            'user':
+            User.query.filter_by(id=self.user_id).first().convert_to_obj(),
             'created_at': self.created_at,
         }
 

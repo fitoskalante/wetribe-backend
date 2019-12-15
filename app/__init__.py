@@ -205,12 +205,10 @@ def join_event():
         if api_key:
             api_key = api_key.replace('Token ', '', 1)
             token = Token.query.filter_by(uuid=api_key).first()
-            print(token)
             if token:
                 currentuser = token.user
                 if currentuser:
                     ev_id = request.get_json()
-                    print('osdnfvaidjnvoaisdbvcpasidbvcoasidbv', ev_id)
                     a = Attendance(event_id=ev_id, user_id=currentuser.id)
                     db.session.add(a)
                     db.session.commit()
@@ -227,8 +225,10 @@ def join_event():
 def leave_event():
     if request.method == 'POST':
         ev_id = request.get_json()
+
         a = Attendance.query.filter_by(event_id=ev_id,
                                        user_id=current_user.id).first()
+        print('isjcisudnciwdsjcniwsc', a, current_user.id)
         db.session.delete(a)
         db.session.commit()
         res = {'joined': False}
@@ -240,11 +240,16 @@ def leave_event():
 def comment():
     if request.method == 'POST':
         response = request.get_json()
-        c = Comment(bode=response.comment,
+        c = Comment(body=response['comment'],
                     user_id=current_user.id,
-                    event_id=response.id)
-        print(response)
-        res = {'joined': False}
+                    event_id=response['id'])
+        c.add()
+        comment = Comment.query.filter_by(id=c.id).first()
+        print(comment)
+        if comment:
+            res = {'success': True}
+            return jsonify(res)
+        res = {'success': False}
         return jsonify(res)
 
 
@@ -259,8 +264,6 @@ def get_event_list():
 @app.route('/geteventinfo/<id>')
 def get_event_info(id):
     e = Event.query.filter_by(id=id).first()
-    user = User.query.filter_by(id=e.creator_id).first()
-    a = len(Attendance.query.filter_by(event_id=id).all())
     api_key = request.headers.get('Authorization')
     if api_key:
         api_key = api_key.replace('Token ', '', 1)
@@ -270,29 +273,35 @@ def get_event_info(id):
             if currentuser:
                 check_attending = Attendance.query.filter_by(
                     event_id=id, user_id=currentuser.id).first()
+
                 if check_attending:
+                    if e.creator_id == currentuser.id:
+                        res = {
+                            'event': e.convert_to_obj(),
+                            'attending': True,
+                            'user_loged': True,
+                            'my_event': True,
+                        }
+                        return jsonify(res)
                     res = {
                         'event': e.convert_to_obj(),
-                        'user': user.convert_to_obj(),
-                        'attendance': a,
                         'attending': True,
-                        'user_loged': True
+                        'user_loged': True,
+                        'my_event': False,
                     }
                     return jsonify(res)
                 res = {
                     'event': e.convert_to_obj(),
-                    'user': user.convert_to_obj(),
-                    'attendance': a,
                     'attending': False,
-                    'user_loged': True
+                    'user_loged': True,
+                    'my_event': False,
                 }
                 return jsonify(res)
     res = {
         'event': e.convert_to_obj(),
-        'user': user.convert_to_obj(),
-        'attendance': a,
         'attending': False,
-        'user_loged': False
+        'user_loged': False,
+        'my_event': False,
     }
     return jsonify(res)
 
@@ -319,6 +328,42 @@ def create_event():
         e.add()
         a = Attendance(event_id=e.id, user_id=current_user.id)
         a.add()
+        categories = ev_info['categories']
+        if len(categories) > 0:
+            for category in categories:
+                evcat = EventCategory(event_id=e.id, category_id=category)
+                db.session.add(evcat)
+                db.session.commit()
+        res = {"success": True, "event_id": e.id}
+        return jsonify(res)
+
+
+@app.route('/edit-event', methods=['POST'])
+@login_required
+def edit_event():
+    if request.method == 'POST':
+        ev_info = request.get_json()
+
+        old_categs = EventCategory.query.filter_by(
+            event_id=ev_info['id']).all()
+        for c in old_categs:
+            db.session.delete(c)
+            db.session.commit()
+        e = Event.query.get(ev_info['id'])
+        e.title = ev_info['title'],
+        e.creator_id = current_user.id,
+        e.description = ev_info['description'],
+        e.image_url = ev_info['image'],
+        e.address = ev_info['address'],
+        e.city = ev_info['city'],
+        e.country = ev_info['country'],
+        e.time = ev_info['startTime'],
+        e.date = ev_info['startDate'],
+        e.lat = ev_info['pos']['lat'],
+        e.lng = ev_info['pos']['lng'],
+
+        db.session.commit()
+
         categories = ev_info['categories']
         if len(categories) > 0:
             for category in categories:
