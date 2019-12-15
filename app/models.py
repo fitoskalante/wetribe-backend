@@ -138,7 +138,7 @@ class Category(db.Model):
 class Interest(db.Model):
     __tablename__ = 'interests'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
+    name = db.Column(db.String)
 
     def convert_to_obj(self):
         return {"id": self.id, "name": self.name}
