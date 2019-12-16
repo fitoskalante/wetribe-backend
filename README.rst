@@ -5,8 +5,6 @@ Wetribe is a mobile friendly web app that connect people interested in taking ac
 
 ### Motivations + Problems
 
-*Why is this project useful? Why were you interested in working on it? What hair-on-fire problems do you see?*
-
 I got the Idea of Wetribe based in my own experiences travelling and seeing the impact that our lifestyle makes in our environment.
 
 The problem with polution, poverty and inequity is so big that normally we feel that it is impossible to make a change. This project is based in the idea of strength through unity, and that if we work toguether we can contribute to a better world.
