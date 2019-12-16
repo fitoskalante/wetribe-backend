@@ -148,11 +148,8 @@ def register():
 def get_events_by_location():
     if request.method == 'POST':
         data = request.get_json()
-        print('datatata', data)
         city = data.split(', ')[0]
-        print('datatata', city)
         evs_city = Event.query.filter_by(city=city).all()
-        print(evs_city)
         if len(evs_city) > 0:
             res = {
                 'success': True,
@@ -244,7 +241,7 @@ def reverse_geocode():
         if latlng:
             reverse_geocode_result = gmaps.reverse_geocode(
                 (latlng['lat'], latlng['lng']))
-            res = reverse_geocode_result[3]
+            res = reverse_geocode_result[-2]
             if not res:
                 res_two = reverse_geocode_result[2]
                 if not res_two:
@@ -254,7 +251,7 @@ def reverse_geocode():
                         return jsonify(res_final)
                     return jsonify(res_three)
                 return jsonify(res_two)
-            return jsonify(reverse_geocode_result[3])
+            return jsonify(res)
         else:
             res = {'message': 'No position finded'}
             return jsonify(res)
