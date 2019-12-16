@@ -43,12 +43,14 @@ class User(UserMixin, db.Model):
         db.session.commit()
 
     def convert_to_obj(self):
-
         return {
             "id": self.id,
             "name": self.name,
             "email": self.email,
             "interests": [i.convert_to_obj() for i in self.interests],
+            "events": [i.event_info() for i in self.events],
+            "attendances": [i.event_info() for i in self.attendances],
+            "comments": [i.my_comments_info() for i in self.comments],
             "country": self.country,
             "city": self.city,
         }
@@ -84,9 +86,19 @@ class Event(db.Model):
         db.session.add(self)
         db.session.commit()
 
+    def event_info(self):
+        return {
+            "id": self.id,
+            "creator_id": self.creator_id,
+            "title": self.title,
+            "city": self.city,
+            "country": self.country,
+            "date": self.date,
+            "image_url": self.image_url,
+        }
+
     def convert_to_obj(self):
         c = Comment.query.filter_by(event_id=self.id).all()
-        print(c)
         return {
             "id":
             self.id,
@@ -184,6 +196,14 @@ class Comment(db.Model):
     def add(self):
         db.session.add(self)
         db.session.commit()
+
+    def my_comments_info(self):
+        return {
+            "id": self.id,
+            "body": self.body,
+            'event_id': self.event_id,
+            'created_at': self.created_at,
+        }
 
     def convert_to_obj(self):
         return {
