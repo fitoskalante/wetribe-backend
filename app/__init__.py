@@ -2,7 +2,7 @@ from flask import Flask, redirect, url_for, flash, render_template, jsonify, req
 from flask_login import login_required, logout_user, current_user
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 from .config import Config
-from .models import db, login_manager, User, Token, Event, EventCategory, Category, Attendance, Comment
+from .models import db, login_manager, User, Token, Event, EventCategory, Category, Attendance, Comment, UserInterest, Interest
 from .oauth import blueprint
 from .cli import create_db
 from flask_migrate import Migrate
@@ -127,12 +127,44 @@ def register():
             user = User(
                 name=data['name'],
                 email=data['email'],
+                city=data['city'],
+                last_name=data['lastname'],
+                country=data['country'],
             )
             user.set_password(data['password'])
             user.add()
-            res = {'success': True, "message": "Success"}
+            res = {
+                'success': True,
+                "message": "Success",
+                'user_id': user.id,
+                'user_name': user.name,
+            }
             return jsonify(res)
         res = {'success': False, "message": "This email is already registered"}
+        return jsonify(res)
+
+
+@app.route('/addaboutyou', methods=['POST'])
+def add_about_you():
+    if request.method == 'POST':
+        data = request.get_json()
+        user_id = data['user_id']['user_id']
+        description = data['data']['description']
+        interests = data['interests']
+        user = User.query.get(user_id)
+
+        user.description = description
+        db.session.commit()
+
+        if len(interests) > 0:
+            for interest in interests:
+                usin = UserInterest(user_id=user_id, interest_id=interest)
+                db.session.add(usin)
+                db.session.commit()
+        res = {
+            'success': True,
+            "message": "Success",
+        }
         return jsonify(res)
 
 
@@ -273,7 +305,6 @@ def get_event_info(id):
             if currentuser:
                 check_attending = Attendance.query.filter_by(
                     event_id=id, user_id=currentuser.id).first()
-
                 if check_attending:
                     if e.creator_id == currentuser.id:
                         res = {
@@ -282,6 +313,7 @@ def get_event_info(id):
                             'user_loged': True,
                             'my_event': True,
                         }
+
                         return jsonify(res)
                     res = {
                         'event': e.convert_to_obj(),

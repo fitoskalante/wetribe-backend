@@ -13,18 +13,19 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
     last_name = db.Column(db.String)
+    description = db.Column(db.Text)
     email = db.Column(db.String)
     city = db.Column(db.String)
     country = db.Column(db.String)
     password = db.Column(db.String)
-    events = db.relationship('Event', backref='user', lazy=True)
-    comments = db.relationship('Comment', backref='user', lazy=True)
+    events = db.relationship('Event', backref='user_events', lazy=True)
+    comments = db.relationship('Comment', backref='user_comments', lazy=True)
     interests = db.relationship('Interest',
-                                backref='user',
+                                backref='user_interests',
                                 lazy=True,
                                 secondary='userinterests')
     attendances = db.relationship('Event',
-                                  backref='user',
+                                  backref='user_attendances',
                                   lazy=True,
                                   secondary='attendances')
 
@@ -42,6 +43,7 @@ class User(UserMixin, db.Model):
         db.session.commit()
 
     def convert_to_obj(self):
+
         return {
             "id": self.id,
             "name": self.name,
@@ -49,8 +51,6 @@ class User(UserMixin, db.Model):
             "interests": [i.convert_to_obj() for i in self.interests],
             "country": self.country,
             "city": self.city,
-            "events_created": [i.convert_to_obj() for i in self.events],
-            "events_attending": [i.convert_to_obj() for i in self.attendances],
         }
 
 
@@ -71,14 +71,14 @@ class Event(db.Model):
     lat = db.Column(db.Float)
     lng = db.Column(db.Float)
     categs = db.relationship('Category',
-                             backref='event',
+                             backref='event_categories',
                              lazy=True,
                              secondary='eventcategories')
     attendants = db.relationship('User',
-                                 backref='event',
+                                 backref='event_attendants',
                                  lazy=True,
                                  secondary="attendances")
-    comments = db.relationship('Comment', backref='event', lazy=True)
+    comments = db.relationship('Comment', backref='event_comments', lazy=True)
 
     def add(self):
         db.session.add(self)
@@ -86,6 +86,7 @@ class Event(db.Model):
 
     def convert_to_obj(self):
         c = Comment.query.filter_by(event_id=self.id).all()
+        print(c)
         return {
             "id":
             self.id,
