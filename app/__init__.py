@@ -144,6 +144,26 @@ def register():
         return jsonify(res)
 
 
+@app.route('/geteventslocation', methods=['POST'])
+def get_events_by_location():
+    if request.method == 'POST':
+        data = request.get_json()
+        print('datatata', data)
+        city = data.split(', ')[0]
+        print('datatata', city)
+        evs_city = Event.query.filter_by(city=city).all()
+        print(evs_city)
+        if len(evs_city) > 0:
+            res = {
+                'success': True,
+                'message': 'Join these Tribes in',
+                'events': [i.convert_to_obj() for i in evs_city]
+            }
+            return jsonify(res)
+        res = {'success': False, 'message': 'No Tribes yet in'}
+        return jsonify(res)
+
+
 @app.route('/addaboutyou', methods=['POST'])
 def add_about_you():
     if request.method == 'POST':
@@ -224,7 +244,17 @@ def reverse_geocode():
         if latlng:
             reverse_geocode_result = gmaps.reverse_geocode(
                 (latlng['lat'], latlng['lng']))
-            return jsonify(reverse_geocode_result[0])
+            res = reverse_geocode_result[3]
+            if not res:
+                res_two = reverse_geocode_result[2]
+                if not res_two:
+                    res_three = reverse_geocode_result[1]
+                    if not res_three:
+                        res_final = reverse_geocode_result[0]
+                        return jsonify(res_final)
+                    return jsonify(res_three)
+                return jsonify(res_two)
+            return jsonify(reverse_geocode_result[3])
         else:
             res = {'message': 'No position finded'}
             return jsonify(res)
