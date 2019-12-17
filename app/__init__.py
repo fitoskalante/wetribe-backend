@@ -332,6 +332,7 @@ def get_event_info(id):
             if currentuser:
                 check_attending = Attendance.query.filter_by(
                     event_id=id, user_id=currentuser.id).first()
+                print(check_attending)
                 if check_attending:
                     if e.creator_id == currentuser.id:
                         res = {
@@ -340,7 +341,6 @@ def get_event_info(id):
                             'user_loged': True,
                             'my_event': True,
                         }
-
                         return jsonify(res)
                     res = {
                         'event': e.convert_to_obj(),
