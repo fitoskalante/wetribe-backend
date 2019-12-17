@@ -284,7 +284,6 @@ def join_event():
 def leave_event():
     if request.method == 'POST':
         ev_id = request.get_json()
-
         a = Attendance.query.filter_by(event_id=ev_id,
                                        user_id=current_user.id).first()
         print('isjcisudnciwdsjcniwsc', a, current_user.id)
