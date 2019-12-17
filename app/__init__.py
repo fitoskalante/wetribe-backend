@@ -241,7 +241,7 @@ def reverse_geocode():
         if latlng:
             reverse_geocode_result = gmaps.reverse_geocode(
                 (latlng['lat'], latlng['lng']))
-            res = reverse_geocode_result[-2]
+            res = reverse_geocode_result[-4]
             if not res:
                 res_two = reverse_geocode_result[2]
                 if not res_two:
