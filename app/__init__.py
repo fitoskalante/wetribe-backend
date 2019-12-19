@@ -144,7 +144,7 @@ def register():
         return jsonify(res)
 
 
-@app.route('/geteventslocation', methods=['POST'])
+@app.route('/geteventsbylocation', methods=['POST'])
 def get_events_by_location():
     if request.method == 'POST':
         data = request.get_json()
@@ -241,13 +241,26 @@ def reverse_geocode():
         if latlng:
             reverse_geocode_result = gmaps.reverse_geocode(
                 (latlng['lat'], latlng['lng']))
-            res = reverse_geocode_result[-4]
+            res = {
+                'city': reverse_geocode_result[6],
+                'address': reverse_geocode_result[0]
+            }
+            print(res)
             if not res:
-                res_two = reverse_geocode_result[2]
+                res_two = {
+                    'city': reverse_geocode_result[2],
+                    'address': reverse_geocode_result[0]
+                }
                 if not res_two:
-                    res_three = reverse_geocode_result[1]
+                    res_three = {
+                        'city': reverse_geocode_result[1],
+                        'address': reverse_geocode_result[0]
+                    }
                     if not res_three:
-                        res_final = reverse_geocode_result[0]
+                        res_final = {
+                            'city': reverse_geocode_result[0],
+                            'address': reverse_geocode_result[0]
+                        }
                         return jsonify(res_final)
                     return jsonify(res_three)
                 return jsonify(res_two)
@@ -315,7 +328,6 @@ def comment():
 def get_event_list():
     event_list = Event.query.all()
     res = [i.convert_to_obj() for i in event_list]
-
     return jsonify(res)
 
 
